@@ -1,0 +1,11 @@
+[project]
+name = "loggy-py"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pytest>=8.4.2",
+]
+[tool.pytest.ini_options]
+pythonpath = ["src"]
