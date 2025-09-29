@@ -1,7 +1,7 @@
 # baselog-py
 
-**baselog-py** is the official Python SDK for [Loggy API](https://github.com/your-org/loggy-api).  
-It allows developers to easily send logs from their applications to Loggy.  
+**baselog-py** is the official Python SDK for [Baselog API](https://github.com/Baselog-Inc/baselog-api.git).  
+It allows developers to easily send logs from their applications to Baselog.  
 
 ## Features
 
