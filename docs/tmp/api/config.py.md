@@ -112,16 +112,6 @@ class RetryStrategy:
 - **BASELOG_BATCH_SIZE** (int): Future batching size (default: 100; not used in Phase 1).
 - **BASELOG_BATCH_INTERVAL** (int): Batch send interval in seconds (default: 5; future use).
 
-## Environment Variables Example
-```bash
-# Basic setup
-export BASELOG_API_BASE_URL=https://api.baselog.io/v1
-export BASELOG_ENVIRONMENT=production
-
-# Performance tweaks
-export BASELOG_TIMEOUT_READ=45  # Longer read timeout for high-latency networks
-export BASELOG_RETRY_COUNT=5    # More retries in unreliable environments
-```
 
 ## Integration with Other Components
 - **With `client.py` (Section 1.2):** `load_config()` provides `base_url`, `timeouts.to_dict()`, and `retry_strategy` to initialize `httpx.AsyncClient` and apply retries. Example: `client = APIClient(load_config())`.
