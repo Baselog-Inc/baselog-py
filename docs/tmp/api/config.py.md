@@ -116,7 +116,6 @@ class RetryStrategy:
 ```bash
 # Basic setup
 export BASELOG_API_BASE_URL=https://api.baselog.io/v1
-export BASELOG_API_KEY=sk_live_IEH9FlTl1jHUH8F0t2lD3lSPyhfjT5eI
 export BASELOG_ENVIRONMENT=production
 
 # Performance tweaks
