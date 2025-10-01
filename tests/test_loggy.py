@@ -1,5 +1,5 @@
 import pytest
-from loggy import info
+from baselog import info
 
 
 def test_info_function():
