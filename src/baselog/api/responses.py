@@ -24,16 +24,33 @@ class APIResponse:
 
     @classmethod
     def from_success_response(cls, response):
+    @classmethod
+    def from_success_response(cls, response):
         try:
             json_data = response.json()
+        except ValueError as e:
+            raise ValueError("Failed to parse JSON response") from e
+
+        try:
             data = None
             if json_data is not None:
-                required_keys = {"id", "project_id", "level", "category", "message", "tags", "created_at", "updated_at"}
+                required_keys = {
+                    "id", "project_id", "level", "category",
+                    "message", "tags", "created_at", "updated_at"
+                }
                 if not all(key in json_data for key in required_keys):
-                    raise ValueError("Invalid response structure")
+                    missing = required_keys - set(json_data.keys())
+                    raise ValueError(f"Missing required keys in response: {missing}")
                 data = json_data
-        except (ValueError, KeyError):
-            raise ValueError("Invalid response structure")
+        except ValueError:
+            # Propagate the detailed ValueError from above
+            raise
+
+        return cls(
+            success=True,
+            data=data,
+            request_id=response.headers.get("X-Request-ID")
+        )
         return cls(
             success=True, data=data, request_id=response.headers.get("X-Request-ID")
         )
