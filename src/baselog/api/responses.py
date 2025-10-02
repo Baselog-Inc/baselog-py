@@ -54,8 +54,12 @@ class APIError:
         except ValueError:
             json_data = {"message": "Unknown error"}
         retry_after = None
+        retry_after = None
         if "Retry-After" in response.headers:
-            retry_after = int(response.headers["Retry-After"])
+            try:
+                retry_after = int(response.headers["Retry-After"])
+            except (ValueError, TypeError):
+                pass  # Invalid retry_after format, leave as None
         return cls(
             error_code=json_data.get("code", "UNKNOWN_ERROR"),
             message=json_data.get("message", "API Error"),
