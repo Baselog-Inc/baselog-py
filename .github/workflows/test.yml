@@ -1,0 +1,27 @@
+name: Run Tests
+
+on:
+  push:  # Sur toutes les branches pour les commits
+  pull_request:  # Sur toutes les branches pour les PR
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.12]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv and set Python ${{ matrix.python-version }}
+      uses: astral-sh/setup-uv@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+        enable-cache: true  # Active le cache uv pour acc�l�rer les runs
+
+    - name: Install dependencies
+      run: uv sync --locked --all-extras --dev  # Installe le projet en mode dev avec extras
+
+    - name: Run pytest
+      run: uv run pytest  # Lance pytest dans l'environnement uv
