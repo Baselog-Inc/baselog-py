@@ -24,8 +24,6 @@ class APIResponse:
 
     @classmethod
     def from_success_response(cls, response):
-    @classmethod
-    def from_success_response(cls, response):
         try:
             json_data = response.json()
         except ValueError as e:
@@ -39,8 +37,8 @@ class APIResponse:
                     "message", "tags", "created_at", "updated_at"
                 }
                 if not all(key in json_data for key in required_keys):
-                    missing = required_keys - set(json_data.keys())
-                    raise ValueError(f"Missing required keys in response: {missing}")
+                    # Normalize error message to match expected test contract
+                    raise ValueError("Invalid response structure")
                 data = json_data
         except ValueError:
             # Propagate the detailed ValueError from above
@@ -50,9 +48,6 @@ class APIResponse:
             success=True,
             data=data,
             request_id=response.headers.get("X-Request-ID")
-        )
-        return cls(
-            success=True, data=data, request_id=response.headers.get("X-Request-ID")
         )
 
 
