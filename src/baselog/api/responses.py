@@ -66,7 +66,6 @@ class APIError:
         except ValueError:
             json_data = {"message": "Unknown error"}
         retry_after = None
-        retry_after = None
         if "Retry-After" in response.headers:
             try:
                 retry_after = int(response.headers["Retry-After"])
