@@ -29,20 +29,15 @@ class APIResponse:
         except ValueError as e:
             raise ValueError("Failed to parse JSON response") from e
 
-        try:
-            data = None
-            if json_data is not None:
-                required_keys = {
-                    "id", "project_id", "level", "category",
-                    "message", "tags", "created_at", "updated_at"
-                }
-                if not all(key in json_data for key in required_keys):
-                    # Normalize error message to match expected test contract
-                    raise ValueError("Invalid response structure")
-                data = json_data
-        except ValueError:
-            # Propagate the detailed ValueError from above
-            raise
+        data = None
+        if json_data is not None:
+            required_keys = {
+                "id", "project_id", "level", "category",
+                "message", "tags", "created_at", "updated_at"
+            }
+            if not all(key in json_data for key in required_keys):
+                raise ValueError("Invalid response structure")
+            data = json_data
 
         return cls(
             success=True,
