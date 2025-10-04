@@ -27,7 +27,7 @@ def test_logmodel_missing_message():
         LogModel(level=LogLevel.INFO, message="")
 
 
-def test_logmodel_invalid_level():
+def test_loglevel_from_string_rejects_invalid():
     with pytest.raises(ValueError, match="Invalid log level"):
         LogLevel.from_string("invalid")
 
