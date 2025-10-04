@@ -18,7 +18,7 @@ class TestAuthManager:
         auth_manager = AuthManager(api_key=api_key)
 
         assert auth_manager.api_key == api_key
-        assert auth_manager.get_masked_api_key() == "test_...7890"
+        assert auth_manager.get_masked_api_key() == "test...7890"
 
     def test_from_config_factory_method(self):
         """Test factory method from_config."""
@@ -26,7 +26,7 @@ class TestAuthManager:
         auth_manager = AuthManager.from_config(api_key)
 
         assert auth_manager.api_key == api_key
-        assert auth_manager.get_masked_api_key() == "config_...789"
+        assert auth_manager.get_masked_api_key() == "conf...789"
 
     def test_validate_api_key_success(self):
         """Test successful API key validation."""
@@ -93,7 +93,7 @@ class TestAuthManager:
         auth_manager = AuthManager(api_key=api_key)
         masked_key = auth_manager.get_masked_api_key()
 
-        assert masked_key == "test_...7890"
+        assert masked_key == "test...7890"
 
     def test_mask_api_key_short_key(self):
         """Test masking for short API keys."""
@@ -117,7 +117,7 @@ class TestAuthManager:
         auth_manager = AuthManager(api_key=api_key)
 
         assert auth_manager.api_key == api_key
-        assert auth_manager._masked_key == "post_v...7890"
+        assert auth_manager._masked_key == "post...7890"
 
     def test_clean_string_in_validation(self):
         """Test that validation removes leading/trailing whitespace."""

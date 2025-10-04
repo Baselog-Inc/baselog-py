@@ -104,4 +104,19 @@ class AuthManager:
         """
         if len(api_key) < 8:
             return "*" * len(api_key)
-        return f"{api_key[:4]}...{api_key[-4:]}"
+
+        # Get first 4 alphanumeric characters, or use first 4 if not enough alnum chars
+        alnum_start = []
+        for char in api_key:
+            if char.isalnum():
+                alnum_start.append(char)
+                if len(alnum_start) == 4:
+                    break
+
+        # If we found fewer than 4 alnum chars, use first 4 chars
+        prefix = ''.join(alnum_start[:4]) if alnum_start else api_key[:4]
+
+        # Get last 4 characters for suffix
+        suffix = api_key[-4:]
+
+        return f"{prefix}...{suffix}"

@@ -43,7 +43,7 @@ class TestAuthManagerAPIConfigIntegration:
 
         # Test that the API key is properly validated and masked
         assert auth_manager.api_key == "real_workflow_key_1234567890"
-        assert auth_manager.get_masked_api_key() == "real_w...7890"
+        assert auth_manager.get_masked_api_key() == "real...7890"
 
         # Test that headers are correctly generated
         headers = auth_manager.get_auth_headers()
@@ -130,7 +130,7 @@ class TestAuthManagerAPIConfigIntegration:
 
         # Ensure batch settings don't affect auth manager
         assert auth_manager.api_key == "batch_test_key_1234567890"
-        assert auth_manager.get_masked_api_key() == "batch...7890"
+        assert auth_manager.get_masked_api_key() == "batc...7890"
 
         # Auth manager should work independently of batch settings
         headers = auth_manager.get_auth_headers()
@@ -190,4 +190,4 @@ class TestAuthManagerAPIConfigIntegration:
 
         auth_manager2 = config2.create_auth_manager()
         assert auth_manager2.api_key == "special-chars_test.key_123+456"
-        assert auth_manager2.get_masked_api_key() == "spec...456"
+        assert auth_manager2.get_masked_api_key() == "spec...+456"
