@@ -4,6 +4,28 @@ from datetime import datetime
 from enum import Enum
 
 
+# Custom Exception Classes
+class LogModelError(Exception):
+    """Base exception for LogModel validation errors"""
+    pass
+
+
+class InvalidLogLevelError(LogModelError):
+    """Raised when an invalid log level is provided"""
+
+    def __init__(self, level: str, valid_levels: list[str]):
+        self.level = level
+        self.valid_levels = valid_levels
+        super().__init__(f"Invalid log level: '{level}'. Must be one of {valid_levels}")
+
+
+class MissingMessageError(LogModelError):
+    """Raised when a log message is missing"""
+
+    def __init__(self):
+        super().__init__("Message is required for LogModel")
+
+
 class LogLevel(str, Enum):
     DEBUG = "debug"
     INFO = "info"
@@ -17,7 +39,7 @@ class LogLevel(str, Enum):
         try:
             return cls(value.lower())
         except ValueError:
-            raise ValueError(f"Invalid log level: {value}. Must be one of {[e.value for e in cls]}")
+            raise InvalidLogLevelError(value, [e.value for e in cls])
 
 @dataclass
 class LogModel:
@@ -30,9 +52,9 @@ class LogModel:
         if isinstance(self.level, str):
             self.level = LogLevel.from_string(self.level)
         elif not isinstance(self.level, LogLevel):
-            raise ValueError("Level must be a LogLevel or a string convertible to one")
+            raise InvalidLogLevelError(str(self.level), [e.value for e in LogLevel])
         if not self.message:
-            raise ValueError("Message is required for LogModel")
+            raise MissingMessageError()
 
 @dataclass
 class EventModel:
