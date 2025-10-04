@@ -27,11 +27,6 @@ def test_logmodel_missing_message():
         LogModel(level=LogLevel.INFO, message="")
 
 
-def test_logmodel_empty_message():
-    with pytest.raises(ValueError, match="Message is required"):
-        LogModel(level=LogLevel.INFO, message="")
-
-
 def test_logmodel_invalid_level():
     with pytest.raises(ValueError, match="Invalid log level"):
         LogLevel.from_string("invalid")
@@ -40,6 +35,25 @@ def test_logmodel_invalid_level():
 def test_logmodel_case_insensitive_level():
     log = LogModel(level=LogLevel.from_string("INFO"), message="Test")
     assert log.level == LogLevel.INFO
+
+
+def test_logmodel_runtime_string_coercion():
+    # Test that strings are automatically converted to LogLevel
+    log = LogModel(level="INFO", message="Test")
+    assert log.level == LogLevel.INFO
+    assert isinstance(log.level, LogLevel)
+
+
+def test_logmodel_invalid_runtime_string():
+    # Test that invalid strings still raise ValueError
+    with pytest.raises(ValueError, match="Invalid log level"):
+        LogModel(level="invalid", message="Test")
+
+
+def test_logmodel_invalid_non_string_type():
+    # Test that non-string, non-LogLevel types raise ValueError
+    with pytest.raises(ValueError, match="Level must be a LogLevel"):
+        LogModel(level=123, message="Test")
 
 
 def test_logmodel_serialization_to_dict():

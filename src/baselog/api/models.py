@@ -27,6 +27,10 @@ class LogModel:
     tags: List[str] = field(default_factory=list)
 
     def __post_init__(self):
+        if isinstance(self.level, str):
+            self.level = LogLevel.from_string(self.level)
+        elif not isinstance(self.level, LogLevel):
+            raise ValueError("Level must be a LogLevel or a string convertible to one")
         if not self.message:
             raise ValueError("Message is required for LogModel")
 
