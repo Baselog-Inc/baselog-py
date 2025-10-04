@@ -164,6 +164,9 @@ def load_config() -> APIConfig:
         # Parse batch interval from environment, or use default of 5 if not set
         batch_interval_value = int(batch_interval) if batch_interval else 5
 
+        if batch_interval_value <= 0:
+            raise InvalidConfigurationError("Batch interval must be positive")
+
         return APIConfig(
             base_url=base_url,
             api_key=api_key,
