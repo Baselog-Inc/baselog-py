@@ -1,12 +1,12 @@
 import pytest
 from datetime import datetime
 from dataclasses import asdict
-from baselog.api.models import LogModel, EventModel
+from baselog.api.models import LogModel, EventModel, LogLevel
 
 
 def test_logmodel_successful_instantiation():
-    log = LogModel(level="info", message="Test message")
-    assert log.level == "info"
+    log = LogModel(level=LogLevel.INFO, message="Test message")
+    assert log.level == LogLevel.INFO
     assert log.message == "Test message"
     assert log.category is None
     assert log.tags == []
@@ -14,9 +14,9 @@ def test_logmodel_successful_instantiation():
 
 def test_logmodel_with_optional_fields():
     log = LogModel(
-        level="error", message="Test error", category="auth", tags=["tag1", "tag2"]
+        level=LogLevel.ERROR, message="Test error", category="auth", tags=["tag1", "tag2"]
     )
-    assert log.level == "error"
+    assert log.level == LogLevel.ERROR
     assert log.message == "Test error"
     assert log.category == "auth"
     assert log.tags == ["tag1", "tag2"]
@@ -24,44 +24,110 @@ def test_logmodel_with_optional_fields():
 
 def test_logmodel_missing_message():
     with pytest.raises(ValueError, match="Message is required"):
-        LogModel(level="info", message="")
+        LogModel(level=LogLevel.INFO, message="")
 
 
-def test_logmodel_empty_message():
-    with pytest.raises(ValueError, match="Message is required"):
-        LogModel(level="info", message="")
-
-
-def test_logmodel_invalid_level():
-    with pytest.raises(ValueError, match="Invalid level"):
-        LogModel(level="invalid", message="Test")
+def test_loglevel_from_string_rejects_invalid():
+    with pytest.raises(ValueError, match="Invalid log level"):
+        LogLevel.from_string("invalid")
 
 
 def test_logmodel_case_insensitive_level():
+    log = LogModel(level=LogLevel.from_string("INFO"), message="Test")
+    assert log.level == LogLevel.INFO
+
+
+def test_logmodel_runtime_string_coercion():
+    # Test that strings are automatically converted to LogLevel
     log = LogModel(level="INFO", message="Test")
-    assert (
-        log.level == "INFO"
-    )  # Note: validation is case-insensitive check, but stores original
+    assert log.level == LogLevel.INFO
+    assert isinstance(log.level, LogLevel)
+
+
+def test_logmodel_invalid_runtime_string():
+    # Test that invalid strings still raise ValueError
+    with pytest.raises(ValueError, match="Invalid log level"):
+        LogModel(level="invalid", message="Test")
+
+
+def test_logmodel_invalid_non_string_type():
+    # Test that non-string, non-LogLevel types raise ValueError
+    with pytest.raises(ValueError, match="Level must be a LogLevel"):
+        LogModel(level=123, message="Test")
 
 
 def test_logmodel_serialization_to_dict():
-    log = LogModel(level="info", message="Test", category="test_cat", tags=["one"])
+    log = LogModel(level=LogLevel.INFO, message="Test", category="test_cat", tags=["one"])
+    serialized = asdict(log)
+    # Since LogLevel is a str-backed enum, it serializes as a string
     expected = {
         "level": "info",
         "message": "Test",
         "category": "test_cat",
         "tags": ["one"],
     }
-    assert asdict(log) == expected
+    assert serialized == expected
 
 
 def test_logmodel_exclude_optionals_none():
-    log = LogModel(level="info", message="Test")
+    log = LogModel(level=LogLevel.INFO, message="Test")
     serialized = asdict(log)
     assert "category" in serialized  # Includes None
     assert serialized["category"] is None
     assert "tags" in serialized
     assert serialized["tags"] == []
+
+
+# LogLevel Enum Tests
+def test_loglevel_enum_values():
+    assert LogLevel.DEBUG.value == "debug"
+    assert LogLevel.INFO.value == "info"
+    assert LogLevel.WARNING.value == "warning"
+    assert LogLevel.ERROR.value == "error"
+    assert LogLevel.CRITICAL.value == "critical"
+
+
+def test_loglevel_from_string_valid():
+    assert LogLevel.from_string("debug") == LogLevel.DEBUG
+    assert LogLevel.from_string("INFO") == LogLevel.INFO
+    assert LogLevel.from_string("Warning") == LogLevel.WARNING
+    assert LogLevel.from_string("ERROR") == LogLevel.ERROR
+    assert LogLevel.from_string("critical") == LogLevel.CRITICAL
+
+
+def test_loglevel_from_string_invalid():
+    with pytest.raises(ValueError, match="Invalid log level: invalid"):
+        LogLevel.from_string("invalid")
+
+    with pytest.raises(ValueError, match="Invalid log level: unknown"):
+        LogLevel.from_string("unknown")
+
+    with pytest.raises(ValueError, match="Invalid log level: "):
+        LogLevel.from_string("")
+
+
+def test_loglevel_serialization_value():
+    assert LogLevel.INFO.value == "info"
+    assert LogLevel.ERROR.value == "error"
+
+
+def test_loglevel_enum_membership():
+    assert LogLevel.DEBUG in LogLevel
+    assert LogLevel.INFO in LogLevel
+    assert LogLevel.WARNING in LogLevel
+    assert LogLevel.ERROR in LogLevel
+    assert LogLevel.CRITICAL in LogLevel
+
+
+def test_loglevel_string_semantics():
+    # Test that LogLevel behaves like a string
+    level = LogLevel.INFO
+    assert str(level.value) == "info"
+    assert level.value == "info"
+    assert level.value != "debug"
+    assert level.value.upper() == "INFO"
+    assert level.value.lower() == "info"
+    assert len(level.value) == 4
 
 
 def test_eventmodel_successful_instantiation():

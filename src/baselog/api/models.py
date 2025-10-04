@@ -1,20 +1,38 @@
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from enum import Enum
+
+
+class LogLevel(str, Enum):
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+    CRITICAL = "critical"
+
+    @classmethod
+    def from_string(cls, value: str) -> 'LogLevel':
+        """Convert string to LogLevel, case-insensitive"""
+        try:
+            return cls(value.lower())
+        except ValueError:
+            raise ValueError(f"Invalid log level: {value}. Must be one of {[e.value for e in cls]}")
 
 @dataclass
 class LogModel:
-    level: str  # e.g., "info", "error"
+    level: LogLevel
     message: str
     category: Optional[str] = None
     tags: List[str] = field(default_factory=list)
 
     def __post_init__(self):
+        if isinstance(self.level, str):
+            self.level = LogLevel.from_string(self.level)
+        elif not isinstance(self.level, LogLevel):
+            raise ValueError("Level must be a LogLevel or a string convertible to one")
         if not self.message:
             raise ValueError("Message is required for LogModel")
-        valid_levels = {"info", "debug", "warning", "error", "critical"}
-        if self.level.lower() not in valid_levels:
-            raise ValueError(f"Invalid level: {self.level}. Must be one of {valid_levels}")
 
 @dataclass
 class EventModel:
