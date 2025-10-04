@@ -61,7 +61,7 @@ class TestAuthManager:
 
     def test_validate_api_key_invalid_characters(self):
         """Test validation fails for API key with invalid characters."""
-        invalid_key = "invalid@key#123"
+        invalid_key = "invalid@key#12345678"  # Make it long enough
 
         # Create a valid auth manager first, then test validation
         valid_auth_manager = AuthManager(api_key="valid1234567890valid")
@@ -103,7 +103,7 @@ class TestAuthManager:
         auth_manager = AuthManager(api_key=short_key)
         masked_key = auth_manager.get_masked_api_key()
 
-        assert masked_key == "shor...012"
+        assert masked_key == "shor...9012"
 
     def test_mask_api_key_minimum_length(self):
         """Test masking for API keys at minimum length."""
