@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from dataclasses import asdict
-from baselog.api.models import LogModel, EventModel, LogLevel
+from baselog.api.models import LogModel, EventModel, LogLevel, LogModelError, InvalidLogLevelError, MissingMessageError
 
 
 def test_logmodel_successful_instantiation():
@@ -23,12 +23,12 @@ def test_logmodel_with_optional_fields():
 
 
 def test_logmodel_missing_message():
-    with pytest.raises(ValueError, match="Message is required"):
+    with pytest.raises(MissingMessageError, match="Message is required"):
         LogModel(level=LogLevel.INFO, message="")
 
 
 def test_loglevel_from_string_rejects_invalid():
-    with pytest.raises(ValueError, match="Invalid log level"):
+    with pytest.raises(InvalidLogLevelError):
         LogLevel.from_string("invalid")
 
 
@@ -45,14 +45,14 @@ def test_logmodel_runtime_string_coercion():
 
 
 def test_logmodel_invalid_runtime_string():
-    # Test that invalid strings still raise ValueError
-    with pytest.raises(ValueError, match="Invalid log level"):
+    # Test that invalid strings still raise InvalidLogLevelError
+    with pytest.raises(InvalidLogLevelError):
         LogModel(level="invalid", message="Test")
 
 
 def test_logmodel_invalid_non_string_type():
-    # Test that non-string, non-LogLevel types raise ValueError
-    with pytest.raises(ValueError, match="Level must be a LogLevel"):
+    # Test that non-string, non-LogLevel types raise InvalidLogLevelError
+    with pytest.raises(InvalidLogLevelError):
         LogModel(level=123, message="Test")
 
 
@@ -96,13 +96,13 @@ def test_loglevel_from_string_valid():
 
 
 def test_loglevel_from_string_invalid():
-    with pytest.raises(ValueError, match="Invalid log level: invalid"):
+    with pytest.raises(InvalidLogLevelError):
         LogLevel.from_string("invalid")
 
-    with pytest.raises(ValueError, match="Invalid log level: unknown"):
+    with pytest.raises(InvalidLogLevelError):
         LogLevel.from_string("unknown")
 
-    with pytest.raises(ValueError, match="Invalid log level: "):
+    with pytest.raises(InvalidLogLevelError):
         LogLevel.from_string("")
 
 
@@ -128,6 +128,50 @@ def test_loglevel_string_semantics():
     assert level.value.upper() == "INFO"
     assert level.value.lower() == "info"
     assert len(level.value) == 4
+
+
+# Custom Exception Tests
+def test_invalid_log_level_error_attributes():
+    """Test InvalidLogLevelError stores and provides relevant information"""
+    error = InvalidLogLevelError("invalid", ["debug", "info", "error"])
+    assert error.level == "invalid"
+    assert error.valid_levels == ["debug", "info", "error"]
+    assert "Invalid log level: 'invalid'" in str(error)
+
+
+def test_missing_message_error_attributes():
+    """Test MissingMessageError has correct message"""
+    error = MissingMessageError()
+    assert str(error) == "Message is required for LogModel"
+
+
+def test_exception_hierarchy():
+    """Test that custom exceptions inherit correctly"""
+    assert issubclass(InvalidLogLevelError, LogModelError)
+    assert issubclass(MissingMessageError, LogModelError)
+    assert not issubclass(InvalidLogLevelError, MissingMessageError)
+    assert not issubclass(MissingMessageError, InvalidLogLevelError)
+
+
+def test_logmodel_raises_base_exception():
+    """Test that LogModel errors can be caught as base LogModelError"""
+    # Test missing message as base exception
+    with pytest.raises(LogModelError):
+        LogModel(level=LogLevel.INFO, message="")
+
+    # Test invalid level as base exception
+    with pytest.raises(LogModelError):
+        LogModel(level="invalid", message="test")
+
+
+def test_loglevel_from_string_raises_correct_exception():
+    """Test LogLevel.from_string raises InvalidLogLevelError"""
+    with pytest.raises(InvalidLogLevelError) as exc_info:
+        LogLevel.from_string("invalid")
+
+    assert exc_info.value.level == "invalid"
+    assert "debug" in exc_info.value.valid_levels
+    assert "info" in exc_info.value.valid_levels
 
 
 def test_eventmodel_successful_instantiation():
