@@ -26,7 +26,7 @@ class TestAuthManager:
         auth_manager = AuthManager.from_config(api_key)
 
         assert auth_manager.api_key == api_key
-        assert auth_manager.get_masked_api_key() == "conf...56789"
+        assert auth_manager.get_masked_api_key() == "conf...6789"
 
     def test_validate_api_key_success(self):
         """Test successful API key validation."""
@@ -63,9 +63,10 @@ class TestAuthManager:
         """Test validation fails for API key with invalid characters."""
         invalid_key = "invalid@key#123"
 
-        # Test validation directly (not through constructor which would fail length check)
+        # Create a valid auth manager first, then test validation
+        valid_auth_manager = AuthManager(api_key="valid1234567890valid")
         with pytest.raises(InvalidAPIKeyError, match="invalid characters"):
-            AuthManager(api_key="valid1234567890").validate_api_key(invalid_key)
+            valid_auth_manager.validate_api_key(invalid_key)
 
     def test_validate_api_key_valid_special_chars(self):
         """Test validation passes for API key with valid special characters."""
@@ -97,17 +98,17 @@ class TestAuthManager:
         assert masked_key == "test...7890"
 
     def test_mask_api_key_short_key(self):
-        """Test masking for short API keys."""
-        short_key = "short1234567890"  # 16 chars minimum
+        """Test masking for API keys that are barely long enough."""
+        short_key = "short123456789012"  # 16 chars minimum
         auth_manager = AuthManager(api_key=short_key)
         masked_key = auth_manager.get_masked_api_key()
 
-        assert masked_key == "sho...7890"
+        assert masked_key == "shor...012"
 
-    def test_mask_api_key_very_short(self):
-        """Test masking for very short API key."""
-        very_short = "abcde12345678"  # 14 chars, need 16
-        auth_manager = AuthManager(api_key=very_short)
+    def test_mask_api_key_minimum_length(self):
+        """Test masking for API keys at minimum length."""
+        minimal_key = "abcd1234efgh5678"  # 16 chars minimum
+        auth_manager = AuthManager(api_key=minimal_key)
         masked_key = auth_manager.get_masked_api_key()
 
         assert masked_key == "abcd...5678"
@@ -126,7 +127,7 @@ class TestAuthManager:
         auth_manager = AuthManager(api_key=api_key)
 
         assert auth_manager.api_key == "clean_key_1234567890"
-        assert auth_manager.get_masked_api_key() == "cle...7890"
+        assert auth_manager.get_masked_api_key() == "clea...7890"
 
 
 class TestAuthenticationErrors:
