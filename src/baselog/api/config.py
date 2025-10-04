@@ -7,7 +7,7 @@ for the entire baselog SDK.
 
 import os
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import List, Optional
 from enum import Enum
 
 
@@ -124,7 +124,7 @@ class APIConfig:
     timeouts: Timeouts
     retry_strategy: RetryStrategy
     batch_size: int = 100
-    batch_interval: Optional[int] = None
+    batch_interval: int = 5
 
 
 def load_config() -> APIConfig:
@@ -161,6 +161,9 @@ def load_config() -> APIConfig:
         if batch_size <= 0:
             raise InvalidConfigurationError("Batch size must be positive")
 
+        # Parse batch interval from environment, or use default of 5 if not set
+        batch_interval_value = int(batch_interval) if batch_interval else 5
+
         return APIConfig(
             base_url=base_url,
             api_key=api_key,
@@ -168,7 +171,7 @@ def load_config() -> APIConfig:
             timeouts=timeouts,
             retry_strategy=retry_strategy,
             batch_size=batch_size,
-            batch_interval=int(batch_interval) if batch_interval else None
+            batch_interval=batch_interval_value
         )
 
     except ValueError as e:

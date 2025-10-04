@@ -268,7 +268,7 @@ class TestAPIConfig:
         assert config.timeouts == timeouts
         assert config.retry_strategy == retry
         assert config.batch_size == 100
-        assert config.batch_interval is None
+        assert config.batch_interval == 5
 
     def test_api_config_with_custom_values(self):
         timeouts = Timeouts()
@@ -314,8 +314,8 @@ class TestLoadConfig:
         assert config.api_key == "test-key"
         assert config.environment == Environment.DEVELOPMENT
         assert config.batch_size == 100
-        # batch_interval defaults to None when not explicitly set
-        assert config.batch_interval is None
+        # batch_interval defaults to 5 when not explicitly set
+        assert config.batch_interval == 5
 
     def test_load_config_complete_custom(self):
         """Test loading config with all custom values"""
@@ -378,11 +378,11 @@ class TestLoadConfig:
             load_config()
 
     def test_load_config_batch_interval_optional(self):
-        """Test that batch interval is optional and defaults to None"""
+        """Test that batch interval is optional and defaults to 5"""
         os.environ['BASELOG_API_KEY'] = 'test-key'
 
         config = load_config()
-        assert config.batch_interval is None
+        assert config.batch_interval == 5
 
     def test_load_config_custom_base_url(self):
         """Test custom base URL without trailing slash"""
