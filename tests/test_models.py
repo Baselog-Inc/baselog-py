@@ -44,13 +44,15 @@ def test_logmodel_case_insensitive_level():
 
 def test_logmodel_serialization_to_dict():
     log = LogModel(level=LogLevel.INFO, message="Test", category="test_cat", tags=["one"])
+    serialized = asdict(log)
+    # The enum object is serialized as the enum instance, not its value
     expected = {
-        "level": "info",
+        "level": LogLevel.INFO,
         "message": "Test",
         "category": "test_cat",
         "tags": ["one"],
     }
-    assert asdict(log) == expected
+    assert serialized == expected
 
 
 def test_logmodel_exclude_optionals_none():
