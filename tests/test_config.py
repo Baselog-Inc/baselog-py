@@ -1,5 +1,6 @@
 """Tests for the configuration management module"""
 
+import os
 import pytest
 from baselog.api.config import (
     Environment,
@@ -44,6 +45,19 @@ class TestConfigurationError:
         with pytest.raises(EnvironmentConfigurationError):
             raise EnvironmentConfigurationError("Environment config error")
 
+    def test_configuration_error_with_context(self):
+        """Test ConfigurationError with context information"""
+        error = ConfigurationError("Test message", "test_context")
+        str_error = str(error)
+        assert "Test message" in str_error
+        assert "test_context" in str_error
+
+    def test_configuration_error_without_context(self):
+        """Test ConfigurationError without context information"""
+        error = ConfigurationError("Test message")
+        str_error = str(error)
+        assert str_error == "Test message"
+
 
 class TestTimeouts:
     """Test Timeouts dataclass"""
@@ -69,6 +83,58 @@ class TestTimeouts:
         assert hasattr(timeouts, 'read')
         assert hasattr(timeouts, 'write')
         assert hasattr(timeouts, 'pool')
+
+    def test_timeouts_from_env_default(self):
+        """Test loading timeouts from environment with default values"""
+        # Remove environment variables to test defaults
+        if 'BASELOG_TIMEOUT_CONNECT' in os.environ:
+            del os.environ['BASELOG_TIMEOUT_CONNECT']
+
+        timeouts = Timeouts.from_env()
+        assert timeouts.connect == 10.0
+        assert timeouts.read == 30.0
+        assert timeouts.write == 30.0
+        assert timeouts.pool == 60.0
+
+    def test_timeouts_from_env_custom(self):
+        """Test loading timeouts from environment with custom values"""
+        # Set environment variables
+        os.environ['BASELOG_TIMEOUT_CONNECT'] = '5.5'
+        os.environ['BASELOG_TIMEOUT_READ'] = '15.0'
+        os.environ['BASELOG_TIMEOUT_WRITE'] = '25.5'
+        os.environ['BASELOG_TIMEOUT_POOL'] = '45.0'
+
+        timeouts = Timeouts.from_env()
+        assert timeouts.connect == 5.5
+        assert timeouts.read == 15.0
+        assert timeouts.write == 25.5
+        assert timeouts.pool == 45.0
+
+        # Clean up
+        del os.environ['BASELOG_TIMEOUT_CONNECT']
+        del os.environ['BASELOG_TIMEOUT_READ']
+        del os.environ['BASELOG_TIMEOUT_WRITE']
+        del os.environ['BASELOG_TIMEOUT_POOL']
+
+    def test_timeouts_from_env_invalid_value(self):
+        """Test loading timeouts with invalid values raises exception"""
+        os.environ['BASELOG_TIMEOUT_CONNECT'] = 'invalid'
+
+        with pytest.raises(InvalidConfigurationError, match="Invalid timeout value"):
+            Timeouts.from_env()
+
+        del os.environ['BASELOG_TIMEOUT_CONNECT']
+
+    def test_timeouts_to_dict(self):
+        """Test converting timeouts to dict format"""
+        timeouts = Timeouts(connect=5.0, read=15.0)
+        expected = {
+            'connect': 5.0,
+            'read': 15.0,
+            'write': 30.0,
+            'pool': 60.0
+        }
+        assert timeouts.to_dict() == expected
 
 
 class TestRetryStrategy:
@@ -103,6 +169,82 @@ class TestRetryStrategy:
         # Check that the other instance is not affected
         assert 999 not in retry2.status_forcelist
         assert retry2.status_forcelist == [429, 500, 502, 503, 504]
+
+    def test_retry_strategy_from_env_default(self):
+        """Test loading retry strategy from environment with default values"""
+        # Remove environment variables to test defaults
+        for var in ['BASELOG_RETRY_COUNT', 'BASELOG_RETRY_BACKOFF', 'BASELOG_RETRY_STATUS_CODES', 'BASELOG_RETRY_METHODS']:
+            if var in os.environ:
+                del os.environ[var]
+
+        retry = RetryStrategy.from_env()
+        assert retry.max_attempts == 3
+        assert retry.backoff_factor == 1.0
+        assert retry.status_forcelist == [429, 500, 502, 503, 504]
+        assert retry.allowed_methods == ['POST', 'PUT', 'PATCH']
+
+    def test_retry_strategy_from_env_custom_values(self):
+        """Test loading retry strategy from environment with custom values"""
+        os.environ['BASELOG_RETRY_COUNT'] = '5'
+        os.environ['BASELOG_RETRY_BACKOFF'] = '2.5'
+        os.environ['BASELOG_RETRY_STATUS_CODES'] = '401,403,500,502'
+        os.environ['BASELOG_RETRY_METHODS'] = 'GET,POST,PUT,DELETE'
+
+        retry = RetryStrategy.from_env()
+        assert retry.max_attempts == 5
+        assert retry.backoff_factor == 2.5
+        assert retry.status_forcelist == [401, 403, 500, 502]
+        assert retry.allowed_methods == ['GET', 'POST', 'PUT', 'DELETE']
+
+        # Clean up
+        for var in ['BASELOG_RETRY_COUNT', 'BASELOG_RETRY_BACKOFF', 'BASELOG_RETRY_STATUS_CODES', 'BASELOG_RETRY_METHODS']:
+            if var in os.environ:
+                del os.environ[var]
+
+    def test_retry_strategy_from_env_invalid_value(self):
+        """Test loading retry strategy with invalid values raises exception"""
+        os.environ['BASELOG_RETRY_COUNT'] = 'invalid'
+
+        with pytest.raises(InvalidConfigurationError, match="Invalid retry configuration"):
+            RetryStrategy.from_env()
+
+        del os.environ['BASELOG_RETRY_COUNT']
+
+    def test_parse_status_list_empty(self):
+        """Test parsing empty status code list"""
+        result = RetryStrategy._parse_status_list("")
+        assert result == [429, 500, 502, 503, 504]
+
+    def test_parse_status_list_valid(self):
+        """Test parsing valid status code list"""
+        result = RetryStrategy._parse_status_list("200,404,500,503")
+        assert result == [200, 404, 500, 503]
+
+    def test_parse_status_list_invalid(self):
+        """Test parsing invalid status code list raises exception"""
+        with pytest.raises(InvalidConfigurationError, match="Invalid status codes"):
+            RetryStrategy._parse_status_list("200,invalid,500")
+
+    def test_parse_method_list_empty(self):
+        """Test parsing empty method list"""
+        result = RetryStrategy._parse_method_list("")
+        assert result == ['POST', 'PUT', 'PATCH']
+
+    def test_parse_method_list_valid(self):
+        """Test parsing valid method list"""
+        result = RetryStrategy._parse_method_list("get,post,Put,DELETE")
+        assert result == ['GET', 'POST', 'PUT', 'DELETE']
+
+    def test_retry_strategy_to_dict(self):
+        """Test converting retry strategy to dict format"""
+        retry = RetryStrategy(max_attempts=5, backoff_factor=2.0)
+        expected = {
+            'max_attempts': 5,
+            'backoff_factor': 2.0,
+            'status_forcelist': [429, 500, 502, 503, 504],
+            'allowed_methods': ['POST', 'PUT', 'PATCH']
+        }
+        assert retry.to_dict() == expected
 
 
 class TestAPIConfig:
@@ -149,9 +291,122 @@ class TestAPIConfig:
 class TestLoadConfig:
     """Test load_config function"""
 
-    def test_load_config_not_implemented(self):
-        with pytest.raises(NotImplementedError, match="Configuration loading implementation in Issue 005"):
+    def setup_method(self):
+        """Clean environment variables before each test"""
+        # Remove all baselog environment variables
+        baselog_vars = [var for var in os.environ.keys() if var.startswith('BASELOG_')]
+        for var in baselog_vars:
+            del os.environ[var]
+
+    def teardown_method(self):
+        """Clean environment variables after each test"""
+        # Remove all baselog environment variables
+        baselog_vars = [var for var in os.environ.keys() if var.startswith('BASELOG_')]
+        for var in baselog_vars:
+            del os.environ[var]
+
+    def test_load_config_minimal_required(self):
+        """Test loading config with only required environment variables"""
+        os.environ['BASELOG_API_KEY'] = 'test-key'
+
+        config = load_config()
+        assert config.base_url == "https://api.baselog.io/v1"
+        assert config.api_key == "test-key"
+        assert config.environment == "development"
+        assert config.batch_size == 100
+        # batch_interval defaults to None when not explicitly set
+        assert config.batch_interval is None
+
+    def test_load_config_complete_custom(self):
+        """Test loading config with all custom values"""
+        os.environ['BASELOG_API_BASE_URL'] = 'https://staging.baselog.io/v2'
+        os.environ['BASELOG_API_KEY'] = 'staging-key'
+        os.environ['BASELOG_ENVIRONMENT'] = 'staging'
+        os.environ['BASELOG_TIMEOUT_CONNECT'] = '15.0'
+        os.environ['BASELOG_RETRY_COUNT'] = '5'
+        os.environ['BASELOG_BATCH_SIZE'] = '200'
+        os.environ['BASELOG_BATCH_INTERVAL'] = '10'
+
+        config = load_config()
+        assert config.base_url == 'https://staging.baselog.io/v2'
+        assert config.api_key == 'staging-key'
+        assert config.environment == 'staging'
+        assert config.timeouts.connect == 15.0
+        assert config.retry_strategy.max_attempts == 5
+        assert config.batch_size == 200
+        assert config.batch_interval == 10
+
+    def test_load_config_missing_required_api_key(self):
+        """Test that missing API key raises MissingConfigurationError"""
+        with pytest.raises(MissingConfigurationError, match="BASELOG_API_KEY is required"):
             load_config()
+
+    def test_load_config_invalid_environment(self):
+        """Test that invalid environment raises InvalidConfigurationError"""
+        os.environ['BASELOG_API_KEY'] = 'test-key'
+        os.environ['BASELOG_ENVIRONMENT'] = 'invalid_env'
+
+        with pytest.raises(InvalidConfigurationError, match="Invalid environment: invalid_env"):
+            load_config()
+
+    def test_load_config_invalid_batch_size(self):
+        """Test that invalid batch size raises InvalidConfigurationError"""
+        os.environ['BASELOG_API_KEY'] = 'test-key'
+        os.environ['BASELOG_BATCH_SIZE'] = '0'
+
+        with pytest.raises(InvalidConfigurationError, match="Batch size must be positive"):
+            load_config()
+
+        os.environ['BASELOG_BATCH_SIZE'] = '-5'
+        with pytest.raises(InvalidConfigurationError, match="Batch size must be positive"):
+            load_config()
+
+    def test_load_config_invalid_timeout_value(self):
+        """Test that invalid timeout value raises EnvironmentConfigurationError"""
+        os.environ['BASELOG_API_KEY'] = 'test-key'
+        os.environ['BASELOG_TIMEOUT_CONNECT'] = 'invalid'
+
+        with pytest.raises(EnvironmentConfigurationError, match="Environment configuration failed"):
+            load_config()
+
+    def test_load_config_invalid_retry_value(self):
+        """Test that invalid retry value raises EnvironmentConfigurationError"""
+        os.environ['BASELOG_API_KEY'] = 'test-key'
+        os.environ['BASELOG_RETRY_COUNT'] = 'invalid'
+
+        with pytest.raises(EnvironmentConfigurationError, match="Environment configuration failed"):
+            load_config()
+
+    def test_load_config_batch_interval_optional(self):
+        """Test that batch interval is optional and defaults to None"""
+        os.environ['BASELOG_API_KEY'] = 'test-key'
+
+        config = load_config()
+        assert config.batch_interval is None
+
+    def test_load_config_custom_base_url(self):
+        """Test custom base URL without trailing slash"""
+        os.environ['BASELOG_API_KEY'] = 'test-key'
+        os.environ['BASELOG_API_BASE_URL'] = 'https://custom.baselog.io/api'
+
+        config = load_config()
+        assert config.base_url == 'https://custom.baselog.io/api'
+
+    def test_load_config_retry_status_codes_parsing(self):
+        """Test that retry status codes are properly parsed"""
+        os.environ['BASELOG_API_KEY'] = 'test-key'
+        os.environ['BASELOG_RETRY_STATUS_CODES'] = '401,403,429,500,502,503'
+
+        config = load_config()
+        assert config.retry_strategy.status_forcelist == [401, 403, 429, 500, 502, 503]
+
+    def test_load_config_retry_methods_parsing(self):
+        """Test that retry methods are properly parsed and uppercased"""
+        os.environ['BASELOG_API_KEY'] = 'test-key'
+        os.environ['BASELOG_RETRY_METHODS'] = 'get,post,put,delete,patch'
+
+        config = load_config()
+        assert config.retry_strategy.allowed_methods == ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
 
 
 class TestIntegration:
