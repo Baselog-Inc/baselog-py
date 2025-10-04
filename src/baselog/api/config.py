@@ -126,6 +126,15 @@ class APIConfig:
     batch_size: int = 100
     batch_interval: int = 5
 
+    def create_auth_manager(self):
+        """Create AuthManager from configuration.
+
+        Returns:
+            AuthManager instance configured with the API key
+        """
+        from .auth import AuthManager
+        return AuthManager.from_config(self.api_key)
+
 
 def load_config() -> APIConfig:
     """Load and validate the full configuration from environment variables"""
