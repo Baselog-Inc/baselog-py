@@ -1,12 +1,12 @@
 import pytest
 from datetime import datetime
 from dataclasses import asdict
-from baselog.api.models import LogModel, EventModel
+from baselog.api.models import LogModel, EventModel, LogLevel
 
 
 def test_logmodel_successful_instantiation():
-    log = LogModel(level="info", message="Test message")
-    assert log.level == "info"
+    log = LogModel(level=LogLevel.INFO, message="Test message")
+    assert log.level == LogLevel.INFO
     assert log.message == "Test message"
     assert log.category is None
     assert log.tags == []
@@ -14,9 +14,9 @@ def test_logmodel_successful_instantiation():
 
 def test_logmodel_with_optional_fields():
     log = LogModel(
-        level="error", message="Test error", category="auth", tags=["tag1", "tag2"]
+        level=LogLevel.ERROR, message="Test error", category="auth", tags=["tag1", "tag2"]
     )
-    assert log.level == "error"
+    assert log.level == LogLevel.ERROR
     assert log.message == "Test error"
     assert log.category == "auth"
     assert log.tags == ["tag1", "tag2"]
@@ -24,28 +24,26 @@ def test_logmodel_with_optional_fields():
 
 def test_logmodel_missing_message():
     with pytest.raises(ValueError, match="Message is required"):
-        LogModel(level="info", message="")
+        LogModel(level=LogLevel.INFO, message="")
 
 
 def test_logmodel_empty_message():
     with pytest.raises(ValueError, match="Message is required"):
-        LogModel(level="info", message="")
+        LogModel(level=LogLevel.INFO, message="")
 
 
 def test_logmodel_invalid_level():
-    with pytest.raises(ValueError, match="Invalid level"):
-        LogModel(level="invalid", message="Test")
+    with pytest.raises(ValueError, match="Invalid log level"):
+        LogLevel.from_string("invalid")
 
 
 def test_logmodel_case_insensitive_level():
-    log = LogModel(level="INFO", message="Test")
-    assert (
-        log.level == "INFO"
-    )  # Note: validation is case-insensitive check, but stores original
+    log = LogModel(level=LogLevel.from_string("INFO"), message="Test")
+    assert log.level == LogLevel.INFO
 
 
 def test_logmodel_serialization_to_dict():
-    log = LogModel(level="info", message="Test", category="test_cat", tags=["one"])
+    log = LogModel(level=LogLevel.INFO, message="Test", category="test_cat", tags=["one"])
     expected = {
         "level": "info",
         "message": "Test",
@@ -56,7 +54,7 @@ def test_logmodel_serialization_to_dict():
 
 
 def test_logmodel_exclude_optionals_none():
-    log = LogModel(level="info", message="Test")
+    log = LogModel(level=LogLevel.INFO, message="Test")
     serialized = asdict(log)
     assert "category" in serialized  # Includes None
     assert serialized["category"] is None
