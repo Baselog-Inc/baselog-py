@@ -45,9 +45,9 @@ def test_logmodel_case_insensitive_level():
 def test_logmodel_serialization_to_dict():
     log = LogModel(level=LogLevel.INFO, message="Test", category="test_cat", tags=["one"])
     serialized = asdict(log)
-    # The enum object is serialized as the enum instance, not its value
+    # Since LogLevel is a str-backed enum, it serializes as a string
     expected = {
-        "level": LogLevel.INFO,
+        "level": "info",
         "message": "Test",
         "category": "test_cat",
         "tags": ["one"],
@@ -103,6 +103,17 @@ def test_loglevel_enum_membership():
     assert LogLevel.WARNING in LogLevel
     assert LogLevel.ERROR in LogLevel
     assert LogLevel.CRITICAL in LogLevel
+
+
+def test_loglevel_string_semantics():
+    # Test that LogLevel behaves like a string
+    level = LogLevel.INFO
+    assert str(level.value) == "info"
+    assert level.value == "info"
+    assert level.value != "debug"
+    assert level.value.upper() == "INFO"
+    assert level.value.lower() == "info"
+    assert len(level.value) == 4
 
 
 def test_eventmodel_successful_instantiation():

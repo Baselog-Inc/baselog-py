@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 
 
-class LogLevel(Enum):
+class LogLevel(str, Enum):
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
