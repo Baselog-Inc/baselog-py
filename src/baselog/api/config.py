@@ -120,11 +120,11 @@ class APIConfig:
     """Main configuration object for the Baselog API client"""
     base_url: str
     api_key: str
-    environment: str
+    environment: Environment
     timeouts: Timeouts
     retry_strategy: RetryStrategy
     batch_size: int = 100
-    batch_interval: Optional[int] = 5
+    batch_interval: Optional[int] = None
 
 
 def load_config() -> APIConfig:
@@ -139,10 +139,12 @@ def load_config() -> APIConfig:
         if not api_key:
             raise MissingConfigurationError("BASELOG_API_KEY is required")
 
-        environment = os.getenv("BASELOG_ENVIRONMENT", "development")
-        if environment not in [e.value for e in Environment]:
+        environment_str = os.getenv("BASELOG_ENVIRONMENT", "development")
+        try:
+            environment = Environment(environment_str)
+        except ValueError:
             raise InvalidConfigurationError(
-                f"Invalid environment: {environment}. Must be one of {[e.value for e in Environment]}"
+                f"Invalid environment: {environment_str}. Must be one of {[e.value for e in Environment]}"
             )
 
         # Load structured components

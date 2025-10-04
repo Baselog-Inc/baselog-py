@@ -257,18 +257,18 @@ class TestAPIConfig:
         config = APIConfig(
             base_url="https://api.baselog.io",
             api_key="test-key",
-            environment="development",
+            environment=Environment.DEVELOPMENT,
             timeouts=timeouts,
             retry_strategy=retry
         )
 
         assert config.base_url == "https://api.baselog.io"
         assert config.api_key == "test-key"
-        assert config.environment == "development"
+        assert config.environment == Environment.DEVELOPMENT
         assert config.timeouts == timeouts
         assert config.retry_strategy == retry
         assert config.batch_size == 100
-        assert config.batch_interval == 5
+        assert config.batch_interval is None
 
     def test_api_config_with_custom_values(self):
         timeouts = Timeouts()
@@ -277,7 +277,7 @@ class TestAPIConfig:
         config = APIConfig(
             base_url="https://staging.baselog.io",
             api_key="staging-key",
-            environment="staging",
+            environment=Environment.STAGING,
             timeouts=timeouts,
             retry_strategy=retry,
             batch_size=50,
@@ -312,7 +312,7 @@ class TestLoadConfig:
         config = load_config()
         assert config.base_url == "https://api.baselog.io/v1"
         assert config.api_key == "test-key"
-        assert config.environment == "development"
+        assert config.environment == Environment.DEVELOPMENT
         assert config.batch_size == 100
         # batch_interval defaults to None when not explicitly set
         assert config.batch_interval is None
@@ -330,7 +330,7 @@ class TestLoadConfig:
         config = load_config()
         assert config.base_url == 'https://staging.baselog.io/v2'
         assert config.api_key == 'staging-key'
-        assert config.environment == 'staging'
+        assert config.environment == Environment.STAGING
         assert config.timeouts.connect == 15.0
         assert config.retry_strategy.max_attempts == 5
         assert config.batch_size == 200
@@ -420,7 +420,7 @@ class TestIntegration:
         config = APIConfig(
             base_url="https://api.baselog.io/v1",
             api_key="secret-key",
-            environment="production",
+            environment=Environment.PRODUCTION,
             timeouts=timeouts,
             retry_strategy=retry,
             batch_size=200,
@@ -428,7 +428,7 @@ class TestIntegration:
         )
 
         # Verify all components are properly connected
-        assert config.environment == "production"
+        assert config.environment == Environment.PRODUCTION
         assert config.timeouts.connect == 15.0
         assert config.retry_strategy.max_attempts == 5
         assert config.batch_size == 200
@@ -441,17 +441,16 @@ class TestIntegration:
         config = APIConfig(
             base_url="https://api.baselog.io",
             api_key="test-key",
-            environment="development",
+            environment=Environment.DEVELOPMENT,
             timeouts=timeouts,
             retry_strategy=retry
         )
 
         # Verify objects are properly structured
-        assert isinstance(config.environment, str)
+        assert isinstance(config.environment, Environment)
         assert isinstance(config.timeouts, Timeouts)
         assert isinstance(config.retry_strategy, RetryStrategy)
 
         # Verify default values are properly set
         assert isinstance(config.batch_size, int)
-        assert isinstance(config.batch_interval, int)
         assert config.batch_interval is not None
