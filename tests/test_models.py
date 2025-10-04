@@ -62,6 +62,47 @@ def test_logmodel_exclude_optionals_none():
     assert serialized["tags"] == []
 
 
+# LogLevel Enum Tests
+def test_loglevel_enum_values():
+    assert LogLevel.DEBUG.value == "debug"
+    assert LogLevel.INFO.value == "info"
+    assert LogLevel.WARNING.value == "warning"
+    assert LogLevel.ERROR.value == "error"
+    assert LogLevel.CRITICAL.value == "critical"
+
+
+def test_loglevel_from_string_valid():
+    assert LogLevel.from_string("debug") == LogLevel.DEBUG
+    assert LogLevel.from_string("INFO") == LogLevel.INFO
+    assert LogLevel.from_string("Warning") == LogLevel.WARNING
+    assert LogLevel.from_string("ERROR") == LogLevel.ERROR
+    assert LogLevel.from_string("critical") == LogLevel.CRITICAL
+
+
+def test_loglevel_from_string_invalid():
+    with pytest.raises(ValueError, match="Invalid log level: invalid"):
+        LogLevel.from_string("invalid")
+
+    with pytest.raises(ValueError, match="Invalid log level: unknown"):
+        LogLevel.from_string("unknown")
+
+    with pytest.raises(ValueError, match="Invalid log level: "):
+        LogLevel.from_string("")
+
+
+def test_loglevel_serialization_value():
+    assert LogLevel.INFO.value == "info"
+    assert LogLevel.ERROR.value == "error"
+
+
+def test_loglevel_enum_membership():
+    assert LogLevel.DEBUG in LogLevel
+    assert LogLevel.INFO in LogLevel
+    assert LogLevel.WARNING in LogLevel
+    assert LogLevel.ERROR in LogLevel
+    assert LogLevel.CRITICAL in LogLevel
+
+
 def test_eventmodel_successful_instantiation():
     timestamp = datetime.now()
     event = EventModel(
