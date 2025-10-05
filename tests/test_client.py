@@ -3,11 +3,12 @@ from unittest.mock import Mock, patch, AsyncMock
 import sys
 import os
 import httpx
+from datetime import datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from baselog.api.client import APIClient
 from baselog.api.config import APIConfig, Timeouts, RetryStrategy, Environment
-from baselog.api.models import LogModel, APIResponse, LogResponse
+from baselog.api.models import LogModel, APIResponse, LogResponse, EventModel
 from baselog.api.auth import AuthManager
 
 
@@ -306,3 +307,140 @@ class TestAPIClient:
 
         assert result['category'] == 'auth'
         assert result['tags'] == ['security', 'login']
+
+    @pytest.mark.asyncio
+    async def test_send_event_placeholder(self, mock_config):
+        """Test that send_event returns placeholder response for Phase 1."""
+        with patch('baselog.api.client.httpx.AsyncClient'), \
+             patch('baselog.api.client.tenacity.Retrying'):
+
+            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
+            client = APIClient(mock_config, auth_manager)
+
+            # Create test event
+            event = EventModel(
+                event_type="user_action",
+                payload={"action": "click"},
+                timestamp=datetime.now(),
+                source_service="webapp"
+            )
+
+            # Call send_event
+            response = await client.send_event(event)
+
+            # Verify placeholder response
+            assert response.success is False
+            assert "Events not supported yet" in response.message
+            assert response.data["event_type"] == "user_action"
+            assert response.data["message"] == "Event submission is reserved for future phases of development"
+            assert response.request_id is None
+            assert response.timestamp is not None
+
+    @pytest.mark.asyncio
+    async def test_send_event_with_event_id(self, mock_config):
+        """Test send_event with event_id present."""
+        with patch('baselog.api.client.httpx.AsyncClient'), \
+             patch('baselog.api.client.tenacity.Retrying'):
+
+            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
+            client = APIClient(mock_config, auth_manager)
+
+            # Create event with event_id
+            event = EventModel(
+                event_type="system_error",
+                payload={"error": "Database connection failed"},
+                timestamp=datetime.now(),
+                source_service="backend",
+                correlation_id="corr-123"
+            )
+            # Add event_id to test that field
+            event.event_id = "evt-456"
+
+            response = await client.send_event(event)
+
+            # Verify response includes event_id
+            assert response.data["event_type"] == "system_error"
+            assert response.data["event_id"] == "evt-456"
+
+    @pytest.mark.asyncio
+    async def test_send_event_logging(self, mock_config):
+        """Test that send_event logs appropriate messages."""
+        with patch('baselog.api.client.httpx.AsyncClient'), \
+             patch('baselog.api.client.tenacity.Retrying'):
+
+            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
+            client = APIClient(mock_config, auth_manager)
+
+            # Capture logging
+            with patch.object(client.logger, 'warning') as mock_warning, \
+                 patch.object(client.logger, 'info') as mock_info, \
+                 patch.object(client.logger, 'debug') as mock_debug:
+
+                event = EventModel(
+                    event_type="login_attempt",
+                    payload={"username": "testuser"},
+                    timestamp=datetime.now(),
+                    source_service="auth_service"
+                )
+
+                await client.send_event(event)
+
+                # Verify appropriate logging calls
+                mock_warning.assert_called_once()
+                mock_info.assert_called_once()
+                mock_debug.assert_called_once()
+
+                # Check warning message content
+                warning_call = mock_warning.call_args[0][0]
+                assert "Event send attempted for events not currently supported" in warning_call
+                assert "login_attempt" in warning_call
+
+                # Check info message content
+                info_call = mock_info.call_args[0][0]
+                assert "Event system planned for future phases" in info_call
+                assert "POST /projects/events" in info_call
+
+                # Check debug message content
+                debug_call = mock_debug.call_args[0][0]
+                assert "Event validation would occur here" in debug_call
+
+    @pytest.mark.asyncio
+    async def test_send_event_future_readiness(self, mock_config):
+        """Test that send_event handles various event structures correctly."""
+        auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
+        client = APIClient(mock_config, auth_manager)
+
+        # Test with minimal event
+        minimal_event = EventModel(
+            event_type="simple_event",
+            payload={"minimal": "data"},
+            timestamp=datetime.now(),
+            source_service="test"
+        )
+
+        # Should not raise exception and return placeholder
+        response = await client.send_event(minimal_event)
+
+        assert response.success is False
+        assert response.data["event_type"] == "simple_event"
+
+    @pytest.mark.asyncio
+    async def test_send_event_with_empty_event_type(self, mock_config):
+        """Test send_event with empty event_type field in model validation."""
+        auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
+        client = APIClient(mock_config, auth_manager)
+
+        # Create valid event
+        event = EventModel(
+            event_type="empty_test",  # Must be non-empty due to model validation
+            payload={"test": "data"},
+            timestamp=datetime.now(),
+            source_service="test"
+        )
+
+        response = await client.send_event(event)
+
+        # Should work and return placeholder
+        assert response.success is False
+        assert response.data["event_type"] == "empty_test"
+        assert response.data["message"] == "Event submission is reserved for future phases of development"

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import httpx
 import tenacity
 
-from .models import LogModel, APIResponse, LogResponse
+from .models import LogModel, APIResponse, LogResponse, EventModel
 from .auth import AuthManager
 from .config import APIConfig, Timeouts, RetryStrategy, load_config, Environment
 from .exceptions import APIError, APIAuthenticationError, APITimeoutError
@@ -236,3 +236,71 @@ class APIClient:
         """Generate a unique correlation ID for the log entry."""
         import uuid
         return str(uuid.uuid4())
+
+    async def send_event(self, event_data: EventModel) -> APIResponse:
+        """
+        Placeholder for future event submission (not implemented in backend yet).
+
+        Args:
+            event_data: EventModel instance containing event information
+
+        Returns:
+            APIResponse indicating events are not supported yet
+
+        Raises:
+            NotImplementedError: Events are not implemented in Phase 1
+            APIError: For future network issues when implemented
+        """
+        # Log the attempt for visibility
+        event_type = getattr(event_data, 'event_type', 'unknown')
+        self.logger.warning(
+            f"Event send attempted for events not currently supported. "
+            f"Event type: {event_type}. This functionality will be implemented in future phases."
+        )
+
+        # Provide helpful guidance for future implementation
+        self.logger.info(
+            "Event system planned for future phases. "
+            "API endpoint expected: POST /projects/events"
+        )
+
+        # Basic input validation for future readiness
+        if hasattr(event_data, 'event_type') and event_data.event_type:
+            self.logger.debug(
+                "Event validation would occur here for event_type: %s",
+                event_data.event_type
+            )
+
+        # Return immediate response to avoid blocking callers
+        return APIResponse(
+            success=False,
+            message="Events not supported yet - Phase 1 implementation",
+            data={
+                "event_type": getattr(event_data, 'event_type', None),
+                "event_id": getattr(event_data, 'event_id', None),
+                "message": "Event submission is reserved for future phases of development"
+            },
+            request_id=None,
+            timestamp=datetime.now(timezone.utc).isoformat()
+        )
+
+    # === Future Extension Plan ===
+    # When backend is ready for event submission, implement:
+    #
+    # @tenacity.retry(**self._retry_config)
+    # async def send_event(self, event_data: EventModel) -> APIResponse:
+    #     """Full implementation for future event submission."""
+    #     url = f"{self.config.base_url}/projects/events"
+    #     json_data = event_data.model_dump(exclude_unset=True)
+    #
+    #     response = await self._send_with_retry(url, json_data)
+    #     data = response.json()
+    #
+    #     return APIResponse(
+    #         success=True,
+    #         data=data,
+    #         request_id=response.headers.get('X-Request-ID'),
+    #         timestamp=datetime.now(timezone.utc).isoformat()
+    #     )
+    #
+    # This mirrors the send_log implementation but for /projects/events endpoint
