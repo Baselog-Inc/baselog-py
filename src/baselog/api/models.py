@@ -70,3 +70,24 @@ class EventModel:
             raise ValueError("Event type is required")
         if not self.payload:
             raise ValueError("Payload is required for EventModel")
+
+
+@dataclass
+class APIResponse:
+    """Standard API response wrapper."""
+    success: bool
+    data: Any
+    request_id: Optional[str] = None
+    timestamp: Optional[str] = None
+    message: Optional[str] = None
+
+
+@dataclass
+class LogResponse:
+    """Response for log submission."""
+    success: bool
+    message: str
+    data: Dict[str, Any]
+    request_id: Optional[str] = None
+    timestamp: Optional[str] = None
+    correlation_id: Optional[str] = None
