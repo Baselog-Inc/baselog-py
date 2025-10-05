@@ -65,6 +65,7 @@ def test_logmodel_serialization_to_dict():
         "message": "Test",
         "category": "test_cat",
         "tags": ["one"],
+        "correlation_id": None,
     }
     assert serialized == expected
 

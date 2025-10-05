@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock
 import sys
 import os
+import httpx
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from baselog.api.client import APIClient
@@ -18,26 +19,33 @@ class TestAPIClient:
         """Create a mock configuration for testing."""
         return APIConfig(
             base_url="https://api.test.com",
-            api_key="test-api-key",
+            api_key="test-api-key-that-is-at-least-16-characters-long",
             environment=Environment.DEVELOPMENT,
             timeouts=Timeouts(),
             retry_strategy=RetryStrategy()
         )
 
+    @pytest.fixture
+    def mock_auth_manager(self):
+        """Create a mock auth manager for testing."""
+        return AuthManager('test-api-key-that-is-at-least-16-characters-long')
+
     def test_client_initialization_with_config(self, mock_config):
         """Test APIClient initialization with provided config."""
-        client = APIClient(mock_config)
+        auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
+        client = APIClient(mock_config, auth_manager)
 
         assert client.config == mock_config
         assert client.config.base_url == "https://api.test.com"
-        assert client.config.api_key == "test-api-key"
+        assert client.config.api_key == "test-api-key-that-is-at-least-16-characters-long"
+        assert client.auth_manager == auth_manager
 
     def test_client_initialization_without_config(self):
         """Test APIClient initialization without config (creates default config)."""
         with patch('baselog.api.client.load_config') as mock_load_config:
             mock_config = APIConfig(
                 base_url="https://env-config.com",
-                api_key="env-key",
+                api_key="test-api-key-that-is-at-least-16-characters-long",
                 environment=Environment.PRODUCTION,
                 timeouts=Timeouts(),
                 retry_strategy=RetryStrategy()
@@ -47,15 +55,16 @@ class TestAPIClient:
             client = APIClient()
 
             assert client.config == mock_config
+            assert client.auth_manager is not None
             mock_load_config.assert_called_once()
 
     @patch('baselog.api.client.httpx.AsyncClient')
-    def test_setup_http_client(self, mock_async_client, mock_config):
+    def test_setup_http_client(self, mock_async_client, mock_config, mock_auth_manager):
         """Test HTTP client setup with proper configuration."""
         mock_http_client = Mock()
         mock_async_client.return_value = mock_http_client
 
-        client = APIClient(mock_config)
+        client = APIClient(mock_config, mock_auth_manager)
 
         # Verify AsyncClient was called with correct parameters
         mock_async_client.assert_called_once()
@@ -67,12 +76,12 @@ class TestAPIClient:
         assert call_args.kwargs.get('http1') is True
 
     @patch('baselog.api.client.tenacity.Retrying')
-    def test_setup_retry_strategy(self, mock_retrying, mock_config):
+    def test_setup_retry_strategy(self, mock_retrying, mock_config, mock_auth_manager):
         """Test retry strategy setup."""
         mock_retry_instance = Mock()
         mock_retrying.return_value = mock_retry_instance
 
-        client = APIClient(mock_config)
+        client = APIClient(mock_config, mock_auth_manager)
 
         # Verify Retrying was called with exponential backoff
         mock_retrying.assert_called_once()
@@ -81,19 +90,19 @@ class TestAPIClient:
         assert 'wait' in call_args.kwargs
         assert call_args.kwargs['wait'].multiplier == mock_config.retry_strategy.backoff_factor
 
-    def test_client_attributes(self, mock_config):
+    def test_client_attributes(self, mock_config, mock_auth_manager):
         """Test that client has all required attributes."""
         with patch('baselog.api.client.httpx.AsyncClient'), \
              patch('baselog.api.client.tenacity.Retrying'):
 
-            client = APIClient(mock_config)
+            client = APIClient(mock_config, mock_auth_manager)
 
             # Test required attributes
             assert hasattr(client, 'config')
-            assert hasattr(client, 'http_client')
+            assert hasattr(client, 'client')
             assert hasattr(client, 'retry_strategy')
             assert client.config is mock_config
-            assert client.http_client is not None
+            assert client.client is not None
             assert client.retry_strategy is not None
 
     @pytest.mark.asyncio

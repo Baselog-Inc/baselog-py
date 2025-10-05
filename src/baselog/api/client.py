@@ -24,12 +24,12 @@ class APIClient:
         'wait': tenacity.wait_exponential(multiplier=1, min=4, max=10),
         'stop': tenacity.stop_after_attempt(3),
         'retry': tenacity.retry_if_exception_type((
-            httpx.HTTPStatusError,
             httpx.TimeoutException,
             httpx.ConnectError,
             httpx.RequestError,
         )),
         'before_sleep': tenacity.before_sleep_log(logging.getLogger(__name__), logging.INFO),
+        'reraise': True
     }
 
     def __init__(self, config: Optional[APIConfig] = None, auth_manager: Optional[AuthManager] = None):
@@ -144,7 +144,7 @@ class APIClient:
                 success=True,
                 data=log_response,
                 request_id=request_id,
-                timestamp=datetime.utcnow().isoformat()
+                timestamp=datetime.now(timezone.utc).isoformat()
             )
 
         except httpx.HTTPStatusError as e:

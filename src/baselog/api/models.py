@@ -47,6 +47,7 @@ class LogModel:
     message: str
     category: Optional[str] = None
     tags: List[str] = field(default_factory=list)
+    correlation_id: Optional[str] = None
 
     def __post_init__(self):
         if isinstance(self.level, str):
