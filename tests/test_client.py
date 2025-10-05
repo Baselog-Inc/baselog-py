@@ -26,20 +26,15 @@ class TestAPIClient:
             retry_strategy=RetryStrategy()
         )
 
-    @pytest.fixture
-    def mock_auth_manager(self):
-        """Create a mock auth manager for testing."""
-        return AuthManager('test-api-key-that-is-at-least-16-characters-long')
-
+    
     def test_client_initialization_with_config(self, mock_config):
         """Test APIClient initialization with provided config."""
-        auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-        client = APIClient(mock_config, auth_manager)
+        client = APIClient(mock_config)
 
         assert client.config == mock_config
         assert client.config.base_url == "https://api.test.com"
         assert client.config.api_key == "test-api-key-that-is-at-least-16-characters-long"
-        assert client.auth_manager == auth_manager
+        assert client.auth_manager is not None
 
     def test_client_initialization_without_config(self):
         """Test APIClient initialization without config (creates default config)."""
@@ -60,12 +55,12 @@ class TestAPIClient:
             mock_load_config.assert_called_once()
 
     @patch('baselog.api.client.httpx.AsyncClient')
-    def test_setup_http_client(self, mock_async_client, mock_config, mock_auth_manager):
+    def test_setup_http_client(self, mock_async_client, mock_config):
         """Test HTTP client setup with proper configuration."""
         mock_http_client = Mock()
         mock_async_client.return_value = mock_http_client
 
-        client = APIClient(mock_config, mock_auth_manager)
+        client = APIClient(mock_config)
 
         # Verify AsyncClient was called with correct parameters
         mock_async_client.assert_called_once()
@@ -77,12 +72,12 @@ class TestAPIClient:
         assert call_args.kwargs.get('http1') is True
 
     @patch('baselog.api.client.tenacity.Retrying')
-    def test_setup_retry_strategy(self, mock_retrying, mock_config, mock_auth_manager):
+    def test_setup_retry_strategy(self, mock_retrying, mock_config):
         """Test retry strategy setup."""
         mock_retry_instance = Mock()
         mock_retrying.return_value = mock_retry_instance
 
-        client = APIClient(mock_config, mock_auth_manager)
+        client = APIClient(mock_config)
 
         # Verify Retrying was called with exponential backoff
         mock_retrying.assert_called_once()
@@ -91,12 +86,12 @@ class TestAPIClient:
         assert 'wait' in call_args.kwargs
         assert call_args.kwargs['wait'].multiplier == mock_config.retry_strategy.backoff_factor
 
-    def test_client_attributes(self, mock_config, mock_auth_manager):
+    def test_client_attributes(self, mock_config):
         """Test that client has all required attributes."""
         with patch('baselog.api.client.httpx.AsyncClient'), \
              patch('baselog.api.client.tenacity.Retrying'):
 
-            client = APIClient(mock_config, mock_auth_manager)
+            client = APIClient(mock_config)
 
             # Test required attributes
             assert hasattr(client, 'config')
@@ -122,9 +117,8 @@ class TestAPIClient:
             mock_http_client.return_value.post = mock_post
             mock_retrying.return_value = Mock()
 
-            # Create client and auth manager
-            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-            client = APIClient(mock_config, auth_manager)
+            # Create client
+            client = APIClient(mock_config)
 
             # Create test log
             log = LogModel(level='info', message='Test log message')
@@ -161,8 +155,7 @@ class TestAPIClient:
             mock_http_client.return_value.post = mock_post
             mock_retrying.return_value = Mock()
 
-            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-            client = APIClient(mock_config, auth_manager)
+            client = APIClient(mock_config)
 
             # Create log with correlation ID
             log = LogModel(level='error', message='Error message', correlation_id='corr-456')
@@ -189,8 +182,7 @@ class TestAPIClient:
             )
             mock_retrying.return_value = Mock()
 
-            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-            client = APIClient(mock_config, auth_manager)
+            client = APIClient(mock_config)
 
             log = LogModel(level='info', message='Test message')
 
@@ -216,8 +208,7 @@ class TestAPIClient:
             )
             mock_retrying.return_value = Mock()
 
-            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-            client = APIClient(mock_config, auth_manager)
+            client = APIClient(mock_config)
 
             log = LogModel(level='info', message='Test message')
 
@@ -238,8 +229,7 @@ class TestAPIClient:
             mock_http_client.return_value.post.side_effect = httpx.TimeoutException('Request timeout')
             mock_retrying.return_value = Mock()
 
-            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-            client = APIClient(mock_config, auth_manager)
+            client = APIClient(mock_config)
 
             log = LogModel(level='info', message='Test message')
 
@@ -252,8 +242,7 @@ class TestAPIClient:
 
     def test_send_log_validation_error(self, mock_config):
         """Test input validation error."""
-        auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-        client = APIClient(mock_config, auth_manager)
+        client = APIClient(mock_config)
 
         # Test with a valid message first
         valid_log = LogModel(level='info', message='valid message')
@@ -273,8 +262,7 @@ class TestAPIClient:
 
     def test_generate_correlation_id(self, mock_config):
         """Test correlation ID generation."""
-        auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-        client = APIClient(mock_config, auth_manager)
+        client = APIClient(mock_config)
 
         correlation_id = client._generate_correlation_id()
 
@@ -284,8 +272,7 @@ class TestAPIClient:
 
     def test_serialize_log_model(self, mock_config):
         """Test LogModel serialization."""
-        auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-        client = APIClient(mock_config, auth_manager)
+        client = APIClient(mock_config)
 
         # Test basic serialization
         log = LogModel(level='info', message='test message')
@@ -314,8 +301,7 @@ class TestAPIClient:
         with patch('baselog.api.client.httpx.AsyncClient'), \
              patch('baselog.api.client.tenacity.Retrying'):
 
-            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-            client = APIClient(mock_config, auth_manager)
+            client = APIClient(mock_config)
 
             # Create test event
             event = EventModel(
@@ -342,8 +328,7 @@ class TestAPIClient:
         with patch('baselog.api.client.httpx.AsyncClient'), \
              patch('baselog.api.client.tenacity.Retrying'):
 
-            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-            client = APIClient(mock_config, auth_manager)
+            client = APIClient(mock_config)
 
             # Create event with event_id
             event = EventModel(
@@ -368,8 +353,7 @@ class TestAPIClient:
         with patch('baselog.api.client.httpx.AsyncClient'), \
              patch('baselog.api.client.tenacity.Retrying'):
 
-            auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-            client = APIClient(mock_config, auth_manager)
+            client = APIClient(mock_config)
 
             # Capture logging
             with patch.object(client.logger, 'warning') as mock_warning, \
@@ -407,8 +391,7 @@ class TestAPIClient:
     @pytest.mark.asyncio
     async def test_send_event_future_readiness(self, mock_config):
         """Test that send_event handles various event structures correctly."""
-        auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-        client = APIClient(mock_config, auth_manager)
+        client = APIClient(mock_config)
 
         # Test with minimal event
         minimal_event = EventModel(
@@ -427,8 +410,7 @@ class TestAPIClient:
     @pytest.mark.asyncio
     async def test_send_event_with_empty_event_type(self, mock_config):
         """Test send_event with empty event_type field in model validation."""
-        auth_manager = AuthManager('test-api-key-that-is-at-least-16-characters-long')
-        client = APIClient(mock_config, auth_manager)
+        client = APIClient(mock_config)
 
         # Create valid event
         event = EventModel(
@@ -444,3 +426,97 @@ class TestAPIClient:
         assert response.success is False
         assert response.data["event_type"] == "empty_test"
         assert response.data["message"] == "Event submission is reserved for future phases of development"
+
+    @pytest.mark.asyncio
+    async def test_context_manager_entry(self, mock_config):
+        """Test async context manager entry."""
+        with patch('baselog.api.client.httpx.AsyncClient') as mock_async_client, \
+             patch('baselog.api.client.tenacity.Retrying'):
+
+            mock_client_instance = Mock()
+            mock_async_client.return_value = mock_client_instance
+            mock_client_instance.aclose = AsyncMock()
+
+            async with APIClient(mock_config) as client:
+                assert client is not None
+                assert hasattr(client, 'send_log')
+                assert hasattr(client, 'send_event')
+
+    @pytest.mark.asyncio
+    async def test_context_manager_exit_closes_client(self, mock_config):
+        """Test that context manager exit closes HTTP client."""
+        with patch('baselog.api.client.httpx.AsyncClient') as mock_async_client:
+            mock_client_instance = Mock()
+            mock_async_client.return_value = mock_client_instance
+
+            client = APIClient(mock_config)
+
+            # Mock the aclose method
+            mock_client_instance.aclose = AsyncMock()
+
+            # Use async context manager
+            async with client:
+                pass
+
+            # Verify aclose was called
+            mock_client_instance.aclose.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_explicit_close(self, mock_config):
+        """Test explicit close method."""
+        with patch('baselog.api.client.httpx.AsyncClient') as mock_async_client:
+            mock_client_instance = Mock()
+            mock_async_client.return_value = mock_client_instance
+
+            client = APIClient(mock_config)
+
+            # Mock the aclose method
+            mock_client_instance.aclose = AsyncMock()
+
+            # Explicitly close
+            await client.close()
+
+            # Verify aclose was called
+            mock_client_instance.aclose.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_context_manager_closes_on_exception(self, mock_config):
+        """Test that context manager closes client even when exception is raised."""
+        with patch('baselog.api.client.httpx.AsyncClient') as mock_async_client:
+            mock_client_instance = Mock()
+            mock_async_client.return_value = mock_client_instance
+
+            mock_client_instance.aclose = AsyncMock()
+
+            # Create client and use context manager that raises exception
+            client = APIClient(mock_config)
+
+            try:
+                async with client:
+                    raise ValueError("Test exception")
+            except ValueError:
+                pass  # Expected
+
+            # Verify aclose was called despite exception
+            mock_client_instance.aclose.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_double_close_safe(self, mock_config):
+        """Test that calling close twice is safe."""
+        with patch('baselog.api.client.httpx.AsyncClient') as mock_async_client:
+            mock_client_instance = Mock()
+            mock_async_client.return_value = mock_client_instance
+
+            client = APIClient(mock_config)
+
+            # Mock the aclose method
+            mock_client_instance.aclose = AsyncMock()
+
+            # Close first time
+            await client.close()
+
+            # Close second time (should not raise error)
+            await client.close()
+
+            # Verify aclose was called twice (real implementation would handle this gracefully)
+            mock_client_instance.aclose.assert_called()

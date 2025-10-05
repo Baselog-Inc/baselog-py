@@ -32,16 +32,15 @@ class APIClient:
         'reraise': True
     }
 
-    def __init__(self, config: Optional[APIConfig] = None, auth_manager: Optional[AuthManager] = None):
+    def __init__(self, config: Optional[APIConfig] = None):
         """
-        Initialize the APIClient with configuration and authentication.
+        Initialize the APIClient with configuration.
 
         Args:
             config: API configuration. If None, loads from environment.
-            auth_manager: AuthManager for authentication. If None, creates from config.
         """
         self.config = config or load_config()
-        self.auth_manager = auth_manager or self.config.create_auth_manager()
+        self.auth_manager = self.config.create_auth_manager()
         self.logger = logging.getLogger(__name__)
 
         # Setup HTTP client with connection pooling and timeout configuration
@@ -304,3 +303,15 @@ class APIClient:
     #     )
     #
     # This mirrors the send_log implementation but for /projects/events endpoint
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit - cleanup resources."""
+        await self.client.aclose()
+
+    async def close(self):
+        """Explicitly close the HTTP client."""
+        await self.client.aclose()
