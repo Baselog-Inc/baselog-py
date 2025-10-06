@@ -183,16 +183,14 @@ class Logger:
 
     def _print_log_locally(self, level: str, message: str, category: Optional[str] = None, tags: Sequence[str] = []) -> None:
         """Helper method to print logs locally when API mode fails."""
-        parts = [f"{level}: {message}"]
-        if category:
-            parts.append(f"Category: {category}")
-        if tags:
-            parts.append(f"Tags: {', '.join(tags)}")
-        print(' '.join(parts))
+        if self.is_api_mode():
+            print(f"API mode: {message}", category, tags)
+        else:
+            print(f"{level}: {message}", category, tags)
 
     def info(
         self, message: str, *, category: Optional[str] = None, tags: Sequence[str] = []
-    ) -> str:
+    ) -> None:
         if self.is_api_mode() and self._sync_client:
             try:
                 from .api.models import LogModel, LogLevel
@@ -211,7 +209,7 @@ class Logger:
 
     def debug(
         self, message: str, *, category: Optional[str] = None, tags: Sequence[str] = []
-    ) -> str:
+    ) -> None:
         if self.is_api_mode() and self._sync_client:
             try:
                 from .api.models import LogModel, LogLevel
@@ -230,7 +228,7 @@ class Logger:
 
     def warning(
         self, message: str, *, category: Optional[str] = None, tags: Sequence[str] = []
-    ) -> str:
+    ) -> None:
         if self.is_api_mode() and self._sync_client:
             try:
                 from .api.models import LogModel, LogLevel
@@ -249,7 +247,7 @@ class Logger:
 
     def error(
         self, message: str, *, category: Optional[str] = None, tags: Sequence[str] = []
-    ) -> str:
+    ) -> None:
         if self.is_api_mode() and self._sync_client:
             try:
                 from .api.models import LogModel, LogLevel
@@ -268,7 +266,7 @@ class Logger:
 
     def critical(
         self, message: str, *, category: Optional[str] = None, tags: Sequence[str] = []
-    ) -> str:
+    ) -> None:
         if self.is_api_mode() and self._sync_client:
             try:
                 from .api.models import LogModel, LogLevel
