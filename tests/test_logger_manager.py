@@ -61,14 +61,17 @@ class TestLoggerManager:
 
     def test_auto_configuration_from_env(self):
         """Test auto-configuration from environment variables."""
+        # Reset singleton for clean test
+        LoggerManager._instance = None
+
         with patch.dict('os.environ', {
             'BASELOG_API_KEY': 'test-api-key-1234567890123456',  # 16 chars minimum
             'BASELOG_ENVIRONMENT': 'development'
         }):
-            with patch('baselog.logger_manager.load_config') as mock_load_config:
+            with patch('baselog.api.config.load_config') as mock_load_config:
                 mock_config = APIConfig(
                     api_key='test-api-key-1234567890123456',
-                    base_url='https://api.baselog.io/v1',
+                    base_url='https://baselog-api.vercel.app',
                     environment=Environment.DEVELOPMENT,
                     timeouts=Timeouts.from_env(),
                     retry_strategy=RetryStrategy.from_env()
@@ -233,8 +236,12 @@ class TestLoggerManager:
                 results.append((worker_id, logger is not None))
 
                 # Test configuration with valid API key
+                time.sleep(0.001)  # Small delay to reduce race conditions
                 manager.configure(api_key=f'worker-{worker_id}-key-1234567890123456')  # 16 chars minimum
-                results.append((worker_id, manager.is_configured()))
+                time.sleep(0.001)  # Small delay to reduce race conditions
+
+                is_configured = manager.is_configured()
+                results.append((worker_id, is_configured))
 
                 # Test status
                 status = manager.get_status()
@@ -334,5 +341,5 @@ class TestLoggerManager:
 
         # Check that defaults were applied
         config = manager.get_current_config()
-        assert config.base_url == 'https://api.baselog.io/v1'
+        assert config.base_url == 'https://baselog-api.vercel.app'
         assert config.environment == Environment.DEVELOPMENT

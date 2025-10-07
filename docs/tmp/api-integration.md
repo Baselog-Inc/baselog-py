@@ -221,7 +221,7 @@ class Logger:
 **Variables d'Environnement :**
 ```bash
 # Configuration de base
-BASELOG_API_BASE_URL=https://api.baselog.io/v1
+BASELOG_API_BASE_URL=https://baselog-api.vercel.app
 BASELOG_API_KEY=your_api_key_here
 BASELOG_ENVIRONMENT=development
 

@@ -66,7 +66,7 @@ class TestLogger:
             assert not logger.is_local_mode()
             mock_api_config.assert_called_once_with(
                 api_key="test-api-key",
-                base_url="https://api.baselog.io/v1",
+                base_url="https://baselog-api.vercel.app",
                 environment=Environment.DEVELOPMENT,
                 timeouts=Timeouts.from_env(),
                 retry_strategy=RetryStrategy.from_env()
@@ -319,7 +319,7 @@ class TestEnhancedLoggerConstructor:
         assert not logger.is_local_mode()
         assert logger.config is not None
         assert logger.config.api_key == valid_api_key
-        assert logger.config.base_url == "https://api.baselog.io/v1"
+        assert logger.config.base_url == "https://baselog-api.vercel.app"
 
     def test_constructor_with_complete_config(self):
         """Test constructor with complete APIConfig."""
@@ -462,7 +462,7 @@ class TestEnhancedLoggerConstructor:
 
         # Test api_key only
         resolved_config = logger._resolve_config(api_key="api-key-at-least-16-characters")
-        assert resolved_config.base_url == "https://api.baselog.io/v1"
+        assert resolved_config.base_url == "https://baselog-api.vercel.app"
 
         # Test no parameters (should raise ValueError)
         with pytest.raises(ValueError, match="Either api_key or config must be provided"):
@@ -481,7 +481,7 @@ class TestEnhancedLoggerConstructor:
 
         api_info = logger.get_api_info()
         assert api_info is not None
-        assert api_info["base_url"] == "https://api.baselog.io/v1"
+        assert api_info["base_url"] == "https://baselog-api.vercel.app"
         assert api_info["environment"] == "development"
         assert api_info["api_key_masked"] == "test...long"  # Masked for security
         assert api_info["timeouts"]["connect"] == 10.0

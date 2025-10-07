@@ -127,7 +127,7 @@ class Logger:
 
         return APIConfig(
             api_key=api_key,
-            base_url="https://api.baselog.io/v1",  # Default base URL
+            base_url="https://baselog-api.vercel.app",  # Default base URL
             environment=Environment.DEVELOPMENT,   # Default environment
             timeouts=Timeouts.from_env(),          # Load from environment or defaults
             retry_strategy=RetryStrategy.from_env() # Load from environment or defaults

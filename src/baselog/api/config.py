@@ -142,7 +142,7 @@ def load_config() -> APIConfig:
         # Load basic configuration
         base_url = os.getenv("BASELOG_API_BASE_URL")
         if not base_url:
-            base_url = "https://api.baselog.io/v1"
+            base_url = "https://baselog-api.vercel.app"
 
         api_key = os.getenv("BASELOG_API_KEY")
         if not api_key:

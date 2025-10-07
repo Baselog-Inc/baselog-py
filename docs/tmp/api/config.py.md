@@ -32,7 +32,7 @@ class APIConfig:
 
 def load_config() -> APIConfig:
     # Load from env
-    base_url = os.getenv("BASELOG_API_BASE_URL", "https://api.baselog.io/v1")
+    base_url = os.getenv("BASELOG_API_BASE_URL", "https://baselog-api.vercel.app")
     api_key = os.getenv("BASELOG_API_KEY")
     if not api_key:
         raise ConfigurationError("BASELOG_API_KEY is required")
@@ -103,7 +103,7 @@ class RetryStrategy:
 ```
 
 ## Managed Parameters
-- **BASELOG_API_BASE_URL** (str): API base URL (default: "https://api.baselog.io/v1"). Used for constructing endpoints like `/projects/logs`.
+- **BASELOG_API_BASE_URL** (str): API base URL (default: "https://baselog-api.vercel.app"). Used for constructing endpoints like `/projects/logs`.
 - **BASELOG_API_KEY** (str): API authentication key (required; raises error if missing). Passed to `auth.py`.
 - **BASELOG_ENVIRONMENT** (str): Deployment environment (default: "development"). Can load different profiles (e.g., different URLs per env).
 - **BASELOG_TIMEOUT_* ** (float): Individual timeouts (connect/read/write/pool; defaults as above). Fed to `Timeouts` for HTTP client.

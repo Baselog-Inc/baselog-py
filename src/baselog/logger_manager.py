@@ -2,6 +2,7 @@ import threading
 from typing import Optional
 from .logger import Logger
 from .api.config import APIConfig, load_config
+from .helpers import _auto_configure, _create_config_from_api_key
 import logging
 
 
@@ -62,37 +63,34 @@ class LoggerManager:
                 if config is not None:
                     self._logger = Logger(config=config)
                 elif api_key is not None:
-                    self._logger = Logger(api_key=api_key)
+                    # Use helper function for config creation
+                    api_config = _create_config_from_api_key(api_key, **kwargs)
+                    self._logger = Logger(config=api_config)
                 elif kwargs:
-                    # Create config from kwargs
-                    from .api.config import APIConfig, Timeouts, RetryStrategy, Environment
-
-                    final_config = APIConfig(
-                        api_key=kwargs.get('api_key'),
-                        base_url=kwargs.get('base_url', 'https://api.baselog.io/v1'),
-                        environment=Environment(kwargs.get('environment', 'development')),
-                        timeouts=Timeouts.from_env(),
-                        retry_strategy=RetryStrategy.from_env()
-                    )
-                    self._logger = Logger(config=final_config)
+                    # Create config from kwargs using helper
+                    api_key = kwargs.pop('api_key', None)
+                    if api_key:
+                        api_config = _create_config_from_api_key(api_key, **kwargs)
+                        self._logger = Logger(config=api_config)
+                    else:
+                        # Reconfigure from environment
+                        self._logger = _auto_configure()
                 else:
                     # Reconfigure from environment
-                    env_config = load_config()
-                    self._logger = Logger(config=env_config)
+                    self._logger = _auto_configure()
 
                 # Only set _configured to True if logger is in API mode
-                self._configured = False  # Default to False until we confirm API mode
-                if self._logger:
-                    if self._logger.is_api_mode():
-                        self._configured = True
-                    else:
-                        self._configured = False
+                if self._logger and self._logger.is_api_mode():
+                    self._configured = True
+                else:
+                    self._configured = False
 
                 self.logger.info("Logger configured successfully")
 
             except Exception as e:
-                # Fallback to local logger
-                self._logger = Logger()
+                # Fallback to local logger using helper
+                from .helpers import _create_local_logger
+                self._logger = _create_local_logger()
                 self._configured = False
                 self.logger.warning(f"Configuration failed, using local logger: {e}")
 
@@ -126,19 +124,9 @@ class LoggerManager:
         Returns:
             Configured Logger instance or local logger on failure
         """
-        try:
-            # Try to load configuration from environment
-            config = load_config()
-            logger = Logger(config=config)
-            self._configured = True
-            self.logger.debug("Logger auto-configured from environment")
-            return logger
-
-        except Exception as e:
-            # Fallback to local logger
-            self._configured = False
-            self.logger.debug(f"Auto-configuration failed, using local logger: {e}")
-            return Logger()
+        logger_instance = _auto_configure()
+        self._configured = logger_instance.is_api_mode()
+        return logger_instance
 
     def get_current_config(self) -> Optional[APIConfig]:
         """
