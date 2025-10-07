@@ -310,7 +310,7 @@ class TestLoadConfig:
         os.environ['BASELOG_API_KEY'] = 'test-key'
 
         config = load_config()
-        assert config.base_url == "https://api.baselog.io/v1"
+        assert config.base_url == "https://baselog-api.vercel.app"
         assert config.api_key == "test-key"
         assert config.environment == Environment.DEVELOPMENT
         assert config.batch_size == 100
@@ -418,7 +418,7 @@ class TestIntegration:
         retry = RetryStrategy(max_attempts=5)
 
         config = APIConfig(
-            base_url="https://api.baselog.io/v1",
+            base_url="https://baselog-api.vercel.app",
             api_key="secret-key",
             environment=Environment.PRODUCTION,
             timeouts=timeouts,

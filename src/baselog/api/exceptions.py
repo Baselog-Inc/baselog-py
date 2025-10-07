@@ -5,6 +5,36 @@ This module provides specific exception classes for different types of API error
 that can occur during HTTP communications with the baselog backend.
 """
 
+from typing import Optional
+
+
+class ConfigurationError(Exception):
+    """Base exception for all configuration errors"""
+
+    def __init__(self, message: str, context: Optional[str] = None):
+        super().__init__(message)
+        self.context = context
+
+    def __str__(self) -> str:
+        if self.context:
+            return f"{self.args[0]} (context: {self.context})"
+        return self.args[0]
+
+
+class MissingConfigurationError(ConfigurationError):
+    """Raised when required configuration is missing"""
+    pass
+
+
+class InvalidConfigurationError(ConfigurationError):
+    """Raised when configuration values are invalid"""
+    pass
+
+
+class EnvironmentConfigurationError(ConfigurationError):
+    """Raised when environment-specific configuration fails"""
+    pass
+
 
 class APIError(Exception):
     """Base exception for all API-related errors."""
